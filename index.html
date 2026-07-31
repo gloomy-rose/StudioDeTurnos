@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio de Turnos — Gloomy Tools</title>
+     <link rel="stylesheet" href="css/styles.css">
+  <script src="js/script.js" defer></script>
+
+</head>
+<body>
+  <main class="page">
+    <h1>Studio de Turnos</h1>
+    <p class="subtitle">
+      Formate falas, crie parágrafos e insira o texto dentro de modelos HTML salvos para cada personagem.
+    </p>
+
+    <nav class="tabs">
+      <button class="tab-button active" data-tab="formatar">📝 Formatar turno</button>
+      <button class="tab-button" data-tab="personagens">👥 Personagens</button>
+      <button class="tab-button" data-tab="configuracoes">⚙️ Configurações</button>
+      <button class="tab-button" data-tab="backup">📦 Importar e exportar</button>
+    </nav>
+
+    <section id="formatar" class="tab-panel active">
+      <div class="grid">
+        <article class="card">
+          <h2>1. Cole o turno</h2>
+          <p class="hint">A formatação de negrito, cor, itálico e sublinhado pode ser preservada.</p>
+
+          <label class="field">
+            <span>Personagem/modelo</span>
+            <select id="characterSelect"></select>
+          </label>
+
+          <div id="editor" class="editor" contenteditable="true" spellcheck="true"></div>
+
+          <div class="checks">
+            <!--<label><input id="autoDialogues" type="checkbox"> Detectar falas iniciadas por travessão</label>-->
+            <label><input id="useCharacterColor" type="checkbox"> Usar cor padrão do personagem nas falas</label>
+          </div>
+
+          <div class="actions">
+            <button id="formatBtn" class="primary">Formatar HTML</button>
+            <button id="exampleBtn" class="secondary">Carregar exemplo</button>
+            <button id="clearBtn" class="danger">Limpar</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>2. Resultado</h2>
+          <p class="hint">Escolha entre copiar somente o texto formatado ou o HTML completo do personagem.</p>
+
+          <label class="field">
+            <span>Modo de saída</span>
+            <select id="outputMode">
+              <option value="full">HTML completo do personagem</option>
+              <option value="text">Somente texto formatado</option>
+            </select>
+          </label>
+
+          <textarea id="output" readonly placeholder="O HTML aparecerá aqui..."></textarea>
+
+          <div class="actions">
+            <button id="copyBtn" class="primary">Copiar HTML</button>
+            <button id="downloadBtn" class="ghost">Baixar .txt</button>
+          </div>
+
+          <p id="status" class="status" aria-live="polite"></p>
+        </article>
+      </div>
+
+      <section class="card" style="margin-top:18px;">
+        <h2>Pré-visualização</h2>
+        <p class="hint">Visualização aproximada de como o HTML será exibido. As imagens e o tamanho pode não corresponder a versão de postagem, mas é só copiar e testar que funciona. Confia.</p>
+        <div id="preview" class="preview"></div>
+      </section>
+    </section>
+
+    <section id="personagens" class="tab-panel">
+      <div class="grid-3">
+        <aside class="card">
+          <h2>Personagens</h2>
+          <div class="toolbar">
+            <button id="newCharacterBtn" class="primary small">+ Novo</button>
+            <button id="duplicateCharacterBtn" class="secondary small">Duplicar</button>
+          </div>
+          <div id="characterList" class="character-list"></div>
+        </aside>
+
+        <article class="card">
+          <h2>Dados do personagem</h2>
+
+          <label class="field">
+            <span>Nome do modelo</span>
+            <input id="characterName" type="text" placeholder="Ex.: Kwon Hae-rin">
+          </label>
+
+          <div class="settings">
+            <label class="field">
+              <span>Cor padrão das falas</span>
+              <input id="characterColor" type="color" value="#304124">
+            </label>
+
+            <label class="field">
+              <span>Cor em hexadecimal</span>
+              <input id="characterColorText" type="text" value="#304124">
+            </label>
+
+            <label class="field">
+              <span>Marcador do texto</span>
+              <input id="textMarker" type="text" value="{{TEXTO}}">
+            </label>
+
+            <label class="field">
+              <span>Link da ficha</span>
+              <input id="sheetLink" type="text" placeholder="Opcional">
+            </label>
+
+            <label class="field">
+              <span>Cor do link da ficha</span>
+              <input id="sheetColor" type="color" value="#f2edd1">
+            </label>
+
+            <label class="field">
+              <span>Hex da cor do link</span>
+              <input id="sheetColorText" type="text" value="#f2edd1">
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="saveCharacterBtn" class="primary">Salvar personagem</button>
+            <button id="deleteCharacterBtn" class="danger">Excluir</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Modelo HTML</h2>
+          <div class="notice">
+            Coloque <strong>{{TEXTO}}</strong> exatamente no ponto onde o turno deve entrar.
+            Também é possível usar <strong>{{NOME}}</strong>, <strong>{{FICHA}}</strong> e <strong>{{COR_FICHA}}</strong>.
+          </div>
+          <textarea id="templateHtml" class="template-editor" placeholder="<div>... {{TEXTO}} ...</div>"></textarea>
+        </article>
+      </div>
+    </section>
+
+    <section id="configuracoes" class="tab-panel">
+      <div class="card">
+        <h2>Configurações de formatação</h2>
+
+        <div class="settings">
+          <label class="field">
+            <span>Modelo de parágrafo</span>
+            <select id="paragraphMode">
+              <option value="styled">Com recuo e alinhamento</option>
+              <option value="indent">Somente com recuo</option>
+              <option value="plain">Somente &lt;p&gt;</option>
+              <option value="none">Sem parágrafos</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Recuo da primeira linha</span>
+            <input id="indentSize" type="number" min="0" max="150" value="30">
+          </label>
+
+          <label class="field">
+            <span>Unidade</span>
+            <select id="indentUnit">
+              <option value="px">px</option>
+              <option value="em">em</option>
+              <option value="rem">rem</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Alinhamento</span>
+            <select id="textAlign">
+              <option value="justify">Justificado</option>
+              <option value="left">À esquerda</option>
+              <option value="center">Centralizado</option>
+              <option value="right">À direita</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="checks">
+          <label><input id="useHex" type="checkbox" checked> Cores em hexadecimal</label>
+          <label><input id="keepItalic" type="checkbox" checked> Manter itálico</label>
+          <label><input id="keepUnderline" type="checkbox" checked> Manter sublinhado</label>
+          <label><input id="blankLine" type="checkbox" checked> Separar parágrafos no código</label>
+        </div>
+
+        <div class="actions">
+          <button id="saveSettingsBtn" class="primary">Salvar configurações</button>
+        </div>
+        <p id="settingsStatus" class="status"></p>
+      </div>
+    </section>
+
+    <section id="backup" class="tab-panel">
+      <div class="grid">
+        <article class="card">
+          <h2>Exportar biblioteca</h2>
+          <p class="hint">Gera um arquivo JSON com personagens, modelos HTML e configurações.</p>
+          <button id="exportBtn" class="primary">Exportar tudo</button>
+        </article>
+
+        <article class="card">
+          <h2>Importar biblioteca</h2>
+          <p class="hint">Use um arquivo JSON exportado anteriormente por este programa.</p>
+          <input id="importFile" type="file" accept=".json,application/json">
+          <div class="actions">
+            <button id="importBtn" class="secondary">Importar arquivo</button>
+          </div>
+          <p id="backupStatus" class="status"></p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
