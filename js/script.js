@@ -1,13 +1,29 @@
-    const STORAGE_KEY = "studioTurnosDataV1";
+/*
+  STUDIO DE TURNOS — SCRIPT COM {{EXTRAS}}
+
+  Este script pressupõe que o HTML tenha:
+  - #extraInformations  (checkbox)
+  - #extrasBox          (container inicialmente com class="hidden")
+  - #extrasEditor       (div contenteditable)
+
+  O template do personagem deve conter {{EXTRAS}} no local desejado.
+*/
+
+const STORAGE_KEY = "studioTurnosDataV1";
 
     const defaultTemplate = `<div title="ʜᴛᴍʟ ʙʏ: ɢʟᴏᴏᴍʏ." style="background: #481873;padding:16px;text-align:justify;font-size:13px;font-family:Verdana;border: solid #10041d;color:#000;margin:13px 30px;">
 
 <div style="background: #12031e;padding:6px;color:#f2ede3;margin-top: 0px;border-left: 4px solid #12031e;border-right: 4px solid #12031e;">
-     <div style="border:1px solid #a3a3a3;padding:5px;text-align:center;font-family:cambria;font-size:13px;text-transform:uppercase;">  <b style="font-style:italic;font-size:15px;">JANE DOE</b> |  Info 1  |  Info 2   |  Info 3  |  Info 4  ♦ <a href="{{FICHA}}" style="color:{{COR_FICHA}}">FICHA</a></div>
+  <div style="border:1px solid #a3a3a3;padding:5px;text-align:center;font-family:cambria;font-size:13px;text-transform:uppercase;">
+    <b style="font-style:italic;font-size:15px;">JANE DOE</b> | Info 1 | Info 2 | Info 3 | Info 4 ♦
+    <a href="{{FICHA}}" style="color:{{COR_FICHA}}">FICHA</a>
+  </div>
 </div>
-      <div style="border:4px solid #f2ede3;padding:20px;background:#e3e3e3;border-bottom: #12031e solid 9px;">
+
+<div style="border:4px solid #f2ede3;padding:20px;background:#e3e3e3;border-bottom: #12031e solid 9px;">
 {{TEXTO}}
 
+{{EXTRAS}}
 </div>
 
 </div>`;
@@ -15,12 +31,12 @@
     const initialData = {
       selectedCharacterId: "janedoe",
       characters: [{
-        id: "janedoe", 
+        id: "janedoe",
         name: "Jane Doe",
         color: "#a930b4",
         marker: "{{TEXTO}}",
         sheetLink: "",
-        sheetColor:"#f2edd1",
+        sheetColor: "#f2edd1",
         template: defaultTemplate
       }],
       settings: {
@@ -39,6 +55,9 @@
     let currentCharacterId = data.selectedCharacterId;
 
     const editor = document.getElementById("editor");
+    const extrasEditor = document.getElementById("extrasEditor");
+    const extraInformations = document.getElementById("extraInformations");
+    const extrasBox = document.getElementById("extrasBox");
     const output = document.getElementById("output");
     const preview = document.getElementById("preview");
     const status = document.getElementById("status");
@@ -62,6 +81,14 @@
       el.textContent = message;
       el.className = `status ${type}`;
     }
+
+    extraInformations.addEventListener("change", () => {
+      extrasBox.classList.toggle("hidden", !extraInformations.checked);
+
+      if (!extraInformations.checked) {
+        extrasEditor.innerHTML = "";
+      }
+    });
 
     document.querySelectorAll(".tab-button").forEach(button => {
       button.addEventListener("click", () => {
@@ -217,7 +244,12 @@
     });
 
     function escapeHtml(text) {
-      return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      return text
+        .replace(/\u200B/g, "")
+        .replace(/\uFEFF/g, "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
     }
 
     function normalizeColor(color) {
@@ -270,151 +302,97 @@
       return result;
     }
 
-  function splitIntoParagraphs() {
-    const blocks = [];
-    let current = [];
+    function splitIntoParagraphs() {
+      const blocks = [];
+      let current = [];
 
-    const blockTags = new Set([
-      "p",
-      "div",
-      "section",
-      "article",
-      "blockquote",
-      "li",
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6"
-    ]);
+      const blockTags = new Set([
+        "p", "div", "section", "article", "blockquote", "li",
+        "h1", "h2", "h3", "h4", "h5", "h6"
+      ]);
 
-    const blockSelector = Array.from(blockTags).join(",");
+      const blockSelector = Array.from(blockTags).join(",");
 
-    function flush() {
-      const html = current.join("").trim();
+      function flush() {
+        const html = current.join("").trim();
 
-      const text = html
-        .replace(/<br\s*\/?>/gi, " ")
-        .replace(/<[^>]+>/g, "")
-        .replace(/&nbsp;/gi, " ")
-        .trim();
-
-      if (text) {
-        blocks.push(html);
-      }
-
-      current = [];
-    }
-
-    function walk(node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent;
-
-        if (!text) return;
-
-        const parts = text.split(/\n\s*\n/);
-
-        parts.forEach((part, index) => {
-          if (part.trim()) {
-            current.push(escapeHtml(part));
-          }
-
-          if (index < parts.length - 1) {
-            flush();
-          }
-        });
-
-        return;
-      }
-
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return;
-      }
-
-      const tag = node.tagName.toLowerCase();
-
-      if (
-        ["script", "style", "meta", "link", "iframe", "object"].includes(tag)
-      ) {
-        return;
-      }
-
-      if (tag === "br") {
-        if (current.join("").endsWith("<br>")) {
-          flush();
-        } else {
-          current.push("<br>");
-        }
-
-        return;
-      }
-
-      const containsBlockElements = Boolean(
-        node.querySelector(blockSelector)
-      );
-
-      /*
-      * Google Docs costuma envolver vários <p> em um span.
-      * Quando isso acontecer, percorremos os filhos recursivamente.
-      */
-      if (!blockTags.has(tag) && containsBlockElements) {
-        Array.from(node.childNodes).forEach(walk);
-        return;
-      }
-
-      if (blockTags.has(tag)) {
-        flush();
-
-        /*
-        * Uma div do Google Docs também pode conter outros blocos.
-        */
-        if (containsBlockElements) {
-          Array.from(node.childNodes).forEach(walk);
-          flush();
-          return;
-        }
-
-        const content = Array.from(node.childNodes)
-          .map(processInline)
-          .join("")
-          .trim();
-
-        const plainText = content
+        const text = html
           .replace(/<br\s*\/?>/gi, " ")
           .replace(/<[^>]+>/g, "")
           .replace(/&nbsp;/gi, " ")
           .trim();
 
-        if (plainText) {
-          blocks.push(content);
-        }
-
-        return;
+        if (text) blocks.push(html);
+        current = [];
       }
 
-      current.push(processInline(node));
-    }
+      function walk(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          if (!text) return;
 
-    Array.from(editor.childNodes).forEach(walk);
+          const parts = text.split(/\n\s*\n/);
 
-    flush();
+          parts.forEach((part, index) => {
+            if (part.trim()) current.push(escapeHtml(part));
+            if (index < parts.length - 1) flush();
+          });
 
-    return blocks;
-  }
+          return;
+        }
 
-    function applyDialogueDetection(content, color) {
-      if (!document.getElementById("autoDialogues").checked) return content;
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-      const temp = document.createElement("div");
-      temp.innerHTML = content;
-      const plain = temp.textContent.trim();
+        const tag = node.tagName.toLowerCase();
 
-      if (!plain.startsWith("—")) return content;
+        if (["script", "style", "meta", "link", "iframe", "object"].includes(tag)) {
+          return;
+        }
 
-      const useCharacterColor = document.getElementById("useCharacterColor").checked;
-      const style = useCharacterColor ? ` style="color: ${color};"` : "";
-      return `<b${style}>${content}</b>`;
+        if (tag === "br") {
+          if (current.join("").endsWith("<br>")) flush();
+          else current.push("<br>");
+          return;
+        }
+
+        const containsBlockElements = Boolean(node.querySelector(blockSelector));
+
+        if (!blockTags.has(tag) && containsBlockElements) {
+          Array.from(node.childNodes).forEach(walk);
+          return;
+        }
+
+        if (blockTags.has(tag)) {
+          flush();
+
+          if (containsBlockElements) {
+            Array.from(node.childNodes).forEach(walk);
+            flush();
+            return;
+          }
+
+          const content = Array.from(node.childNodes)
+            .map(processInline)
+            .join("")
+            .trim();
+
+          const plainText = content
+            .replace(/<br\s*\/?>/gi, " ")
+            .replace(/<[^>]+>/g, "")
+            .replace(/&nbsp;/gi, " ")
+            .trim();
+
+          if (plainText) blocks.push(content);
+          return;
+        }
+
+        current.push(processInline(node));
+      }
+
+      Array.from(editor.childNodes).forEach(walk);
+      flush();
+
+      return blocks;
     }
 
     function paragraphTag(content) {
@@ -427,17 +405,83 @@
       return `<p style="text-indent: ${indent}; text-align: ${s.textAlign};">${content}</p>`;
     }
 
+    function buildExtrasHtml() {
+      if (!extraInformations.checked || !extrasEditor.innerText.trim()) {
+        return "";
+      }
+
+      const blockTags = new Set([
+        "p", "div", "section", "article", "blockquote", "li",
+        "h1", "h2", "h3", "h4", "h5", "h6"
+      ]);
+
+      function walk(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return escapeHtml(node.textContent)
+            .replace(/\u200B/g, "")
+            .replace(/\uFEFF/g, "");
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+        const tag = node.tagName.toLowerCase();
+
+        if (["script", "style", "meta", "link", "iframe", "object"].includes(tag)) {
+          return "";
+        }
+
+        if (tag === "br") return "<br>";
+
+        const hasNestedBlocks = Array.from(node.children)
+          .some(child => blockTags.has(child.tagName.toLowerCase()));
+
+        /*
+         * O Google Docs costuma colocar vários parágrafos dentro
+         * de spans ou divs externos. Nesses casos, percorremos
+         * recursivamente em vez de transformar tudo em um bloco só.
+         */
+        if (!blockTags.has(tag) && hasNestedBlocks) {
+          return Array.from(node.childNodes).map(walk).join("");
+        }
+
+        if (blockTags.has(tag)) {
+          const content = Array.from(node.childNodes)
+            .map(child => {
+              if (
+                child.nodeType === Node.ELEMENT_NODE &&
+                blockTags.has(child.tagName.toLowerCase())
+              ) {
+                return walk(child);
+              }
+
+              return processInline(child);
+            })
+            .join("")
+            .trim();
+
+          return content ? `${content}<br>` : "";
+        }
+
+        return processInline(node);
+      }
+
+      return Array.from(extrasEditor.childNodes)
+        .map(walk)
+        .join("")
+        .replace(/(?:<br>\s*){3,}/gi, "<br><br>")
+        .replace(/^(?:<br>\s*)+|(?:<br>\s*)+$/gi, "")
+        .trim();
+    }
+
     function buildTextHtml() {
-      const character = getCurrentCharacter();
       return splitIntoParagraphs()
         .map(content => content.replace(/^(<br>)+|(<br>)+$/g, "").trim())
         .filter(Boolean)
-        // .map(content => applyDialogueDetection(content, character.color))
         .map(paragraphTag)
         .join(data.settings.blankLine ? "\n\n" : "\n");
     }
 
-    function buildFullHtml(textHtml) {
+    function buildFullHtml(textHtml, extrasHtml) {
       const c = getCurrentCharacter();
       const marker = c.marker || "{{TEXTO}}";
       let result = c.template || marker;
@@ -447,6 +491,7 @@
       result = result.split("{{COR}}").join(c.color || "");
       result = result.split("{{FICHA}}").join(c.sheetLink || "#");
       result = result.split("{{COR_FICHA}}").join(c.sheetColor || "#f2edd1");
+      result = result.split("{{EXTRAS}}").join(extrasHtml || "");
 
       return result;
     }
@@ -460,10 +505,12 @@
       }
 
       const textHtml = buildTextHtml();
-      const fullHtml = buildFullHtml(textHtml);
+      const extrasHtml = buildExtrasHtml();
+      const fullHtml = buildFullHtml(textHtml, extrasHtml);
       const mode = document.getElementById("outputMode").value;
 
       output.dataset.textHtml = textHtml;
+      output.dataset.extrasHtml = extrasHtml;
       output.dataset.fullHtml = fullHtml;
       output.value = mode === "text" ? textHtml : fullHtml;
       preview.innerHTML = output.value;
@@ -497,9 +544,13 @@
 
     document.getElementById("clearBtn").addEventListener("click", () => {
       editor.innerHTML = "";
+      extrasEditor.innerHTML = "";
+      extraInformations.checked = false;
+      extrasBox.classList.add("hidden");
       output.value = "";
       preview.innerHTML = "";
       output.dataset.textHtml = "";
+      output.dataset.extrasHtml = "";
       output.dataset.fullHtml = "";
       status.textContent = "";
       editor.focus();
@@ -507,11 +558,17 @@
 
     document.getElementById("exampleBtn").addEventListener("click", () => {
       editor.innerHTML = `
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris gravida fringilla sem quis facilisis. 
-Fusce egestas mauris lacus, at convallis arcu fermentum sed. — <b>Fala, chata, fala!</b> — 
-Nam sodales purus sapien, eget condimentum libero euismod nec. Pellentesque habitant morbi tristique senectus et 
-netus et malesuada fames ac turpis egestas.  
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris gravida fringilla sem quis facilisis.</p>
+        <p>Fusce egestas mauris lacus, at convallis arcu fermentum sed. — <b>Fala, chata, fala!</b> — Nam sodales purus sapien.</p>
       `;
+
+      extraInformations.checked = true;
+      extrasBox.classList.remove("hidden");
+      extrasEditor.innerHTML = `
+        <b style="color:#a930b4;">ROLAGEM:</b> Atletismo — 17<br>
+        <i>Observação: bônus de +2 aplicado.</i>
+      `;
+
       formatHtml();
     });
 
