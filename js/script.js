@@ -3,7 +3,7 @@
     const defaultTemplate = `<div title="ʜᴛᴍʟ ʙʏ: ɢʟᴏᴏᴍʏ." style="background: #481873;padding:16px;text-align:justify;font-size:13px;font-family:Verdana;border: solid #10041d;color:#000;margin:13px 30px;">
 
 <div style="background: #12031e;padding:6px;color:#f2ede3;margin-top: 0px;border-left: 4px solid #12031e;border-right: 4px solid #12031e;">
-     <div style="border:1px solid #a3a3a3;padding:5px;text-align:center;font-family:cambria;font-size:13px;text-transform:uppercase;">  <b style="font-style:italic;font-size:15px;">JANE DOE</b> |  Info 1  |  Info 2   |  Info 3  |  Info 4  ♦ FICHA</div>
+     <div style="border:1px solid #a3a3a3;padding:5px;text-align:center;font-family:cambria;font-size:13px;text-transform:uppercase;">  <b style="font-style:italic;font-size:15px;">JANE DOE</b> |  Info 1  |  Info 2   |  Info 3  |  Info 4  ♦ <a href="{{FICHA}}" style="color:{{COR_FICHA}}">FICHA</a></div>
 </div>
       <div style="border:4px solid #f2ede3;padding:20px;background:#e3e3e3;border-bottom: #12031e solid 9px;">
 {{TEXTO}}
@@ -15,7 +15,7 @@
     const initialData = {
       selectedCharacterId: "janedoe",
       characters: [{
-        id: "janedoe",
+        id: "janedoe", 
         name: "Jane Doe",
         color: "#a930b4",
         marker: "{{TEXTO}}",
@@ -270,45 +270,138 @@
       return result;
     }
 
-    function splitIntoParagraphs() {
-      const blocks = [];
-      let current = [];
+  function splitIntoParagraphs() {
+    const blocks = [];
+    let current = [];
 
-      function flush() {
-        const html = current.join("").trim();
-        const text = html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-        if (text) blocks.push(html);
-        current = [];
+    const blockTags = new Set([
+      "p",
+      "div",
+      "section",
+      "article",
+      "blockquote",
+      "li",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6"
+    ]);
+
+    const blockSelector = Array.from(blockTags).join(",");
+
+    function flush() {
+      const html = current.join("").trim();
+
+      const text = html
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/gi, " ")
+        .trim();
+
+      if (text) {
+        blocks.push(html);
       }
 
-      Array.from(editor.childNodes).forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          const parts = node.textContent.split(/\n\s*\n/);
-          parts.forEach((part, index) => {
-            if (part.trim()) current.push(escapeHtml(part));
-            if (index < parts.length - 1) flush();
-          });
+      current = [];
+    }
+
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent;
+
+        if (!text) return;
+
+        const parts = text.split(/\n\s*\n/);
+
+        parts.forEach((part, index) => {
+          if (part.trim()) {
+            current.push(escapeHtml(part));
+          }
+
+          if (index < parts.length - 1) {
+            flush();
+          }
+        });
+
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+
+      const tag = node.tagName.toLowerCase();
+
+      if (
+        ["script", "style", "meta", "link", "iframe", "object"].includes(tag)
+      ) {
+        return;
+      }
+
+      if (tag === "br") {
+        if (current.join("").endsWith("<br>")) {
+          flush();
+        } else {
+          current.push("<br>");
+        }
+
+        return;
+      }
+
+      const containsBlockElements = Boolean(
+        node.querySelector(blockSelector)
+      );
+
+      /*
+      * Google Docs costuma envolver vários <p> em um span.
+      * Quando isso acontecer, percorremos os filhos recursivamente.
+      */
+      if (!blockTags.has(tag) && containsBlockElements) {
+        Array.from(node.childNodes).forEach(walk);
+        return;
+      }
+
+      if (blockTags.has(tag)) {
+        flush();
+
+        /*
+        * Uma div do Google Docs também pode conter outros blocos.
+        */
+        if (containsBlockElements) {
+          Array.from(node.childNodes).forEach(walk);
+          flush();
           return;
         }
 
-        if (node.nodeType !== Node.ELEMENT_NODE) return;
-        const tag = node.tagName.toLowerCase();
+        const content = Array.from(node.childNodes)
+          .map(processInline)
+          .join("")
+          .trim();
 
-        if (["p", "div", "section", "article", "blockquote", "li"].includes(tag)) {
-          flush();
-          const content = Array.from(node.childNodes).map(processInline).join("").trim();
-          if (content && content !== "<br>") blocks.push(content);
-        } else if (tag === "br") {
-          if (current.join("").endsWith("<br>")) flush();
-          else current.push("<br>");
-        } else {
-          current.push(processInline(node));
+        const plainText = content
+          .replace(/<br\s*\/?>/gi, " ")
+          .replace(/<[^>]+>/g, "")
+          .replace(/&nbsp;/gi, " ")
+          .trim();
+
+        if (plainText) {
+          blocks.push(content);
         }
-      });
 
-      flush();
-      return blocks;
+        return;
+      }
+
+      current.push(processInline(node));
     }
+
+    Array.from(editor.childNodes).forEach(walk);
+
+    flush();
+
+    return blocks;
+  }
 
     function applyDialogueDetection(content, color) {
       if (!document.getElementById("autoDialogues").checked) return content;
