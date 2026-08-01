@@ -277,6 +277,22 @@ button:hover { transform: translateY(-1px); }
     font-weight: 700;
 }
 
+  .hidden {
+    display: none !important;
+  }
+
+  .extras-box {
+    margin-top: 14px;
+  }
+
+  .extras-editor {
+    min-height: 130px;
+  }
+
+  .editor[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+  }
+  
 .notice {
     background: #fff8e6;
     border: 1px solid #f2d38b;
