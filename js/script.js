@@ -1,17 +1,5 @@
-/*
-  STUDIO DE TURNOS — SCRIPT COM {{EXTRAS}}
-
-  Este script pressupõe que o HTML tenha:
-  - #extraInformations  (checkbox)
-  - #extrasBox          (container inicialmente com class="hidden")
-  - #extrasEditor       (div contenteditable)
-
-  O template do personagem deve conter {{EXTRAS}} no local desejado.
-*/
-
 const STORAGE_KEY = "studioTurnosDataV1";
-
-    const defaultTemplate = `<div title="ʜᴛᴍʟ ʙʏ: ɢʟᴏᴏᴍʏ." style="background: #481873;padding:16px;text-align:justify;font-size:13px;font-family:Verdana;border: solid #10041d;color:#000;margin:13px 30px;">
+const defaultTemplate = `<div title="ʜᴛᴍʟ ʙʏ: ɢʟᴏᴏᴍʏ." style="background: #481873;padding:16px;text-align:justify;font-size:13px;font-family:Verdana;border: solid #10041d;color:#000;margin:13px 30px;">
 
 <div style="background: #12031e;padding:6px;color:#f2ede3;margin-top: 0px;border-left: 4px solid #12031e;border-right: 4px solid #12031e;">
   <div style="border:1px solid #a3a3a3;padding:5px;text-align:center;font-family:cambria;font-size:13px;text-transform:uppercase;">
