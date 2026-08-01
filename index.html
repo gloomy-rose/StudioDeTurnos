@@ -37,7 +37,26 @@
 
           <div class="checks">
             <!--<label><input id="autoDialogues" type="checkbox"> Detectar falas iniciadas por travessão</label>-->
-            <label><input id="useCharacterColor" type="checkbox"> Usar cor padrão do personagem nas falas</label>
+            <!--<label><input id="useCharacterColor" type="checkbox"> Usar cor padrão do personagem nas falas</label>-->
+            <label><input id="extraInformations" type="checkbox"> Adicionar informações extras</label>
+          </div>
+          
+          <div id="extrasBox" class="extras-box hidden">
+            <label class="field">
+              <span>Informações extras</span>
+
+              <div
+                id="extrasEditor"
+                class="editor extras-editor"
+                contenteditable="true"
+                spellcheck="true"
+                data-placeholder="Cole aqui rolagens, observações ou avisos..."
+              ></div>
+            </label>
+
+            <p class="hint">
+              A formatação será preservada, mas o conteúdo não receberá tags de parágrafo.
+            </p>
           </div>
 
           <div class="actions">
